@@ -3,9 +3,6 @@ Gamestate class that is used by the gameaction module
 This is an example of a 2-player Tic-Tac-Toe game
 */
 
-var 
-  log = require('logging');
-  
 function gamestate(eventEmitter) {
   this.eventEmitter = eventEmitter;
   
@@ -91,8 +88,6 @@ gamestate.prototype.checkGameEnd = function(obj) {
   var winner = null;
   var players = this.players;
   
-  log('players------------>');
-  log(players);
   //check if we no longer have enough players, and there are players left
   if (players.length < this.minPlayers && players.length > 0) {
     gameOver = true;
@@ -100,7 +95,6 @@ gamestate.prototype.checkGameEnd = function(obj) {
   }
   //check if we have 0 players left in this game
   if (players.length == 0) {
-    log('everyone disco');
     gameOver = true;
     winner = 'allPlayerDisconnect';
   }
