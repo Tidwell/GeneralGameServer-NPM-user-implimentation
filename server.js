@@ -17,6 +17,7 @@ var game = require('generalGameServer').createServer({
         default: true
     */
     serveHttp: true,
+    server: {} //if serveHttp is false must be an instance of http.createServer that socket.io can bind to
   },
   game: {
     //# or infinite
