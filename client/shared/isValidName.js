@@ -12,7 +12,7 @@ function isValidName() {
   };
 }
 
-//if the server includes us, we need a constructor
+//if the server includes us, we need to export
 if (typeof exports != 'undefined') {
   module.exports = isValidName;
 }

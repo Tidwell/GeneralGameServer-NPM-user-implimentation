@@ -42,6 +42,20 @@ function gameaction() {
   }
   
   /*
+  *Called when the server tells the players names
+  *@arg     args           the arguments the server sent with the message
+  *             .name      The name the player changed to
+  *             .id        The unique id used to identify the user
+  */
+  this.playerNameChange = function(args) {
+    $('#gamestate ul.players li').each(function() {
+      if ($(this).attr('rel') == args.id) {
+        $(this).html(args.name);
+      }
+    });
+  }
+  
+  /*
   *Called when the active player changes
   *@arg     args           the arguments the server sent with the message
   *             .player    the players in the game

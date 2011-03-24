@@ -29,14 +29,25 @@ var game = require('generalGameServer').createServer({
     //(0 means it will always run and persist even if everyone disconnects)
     minPlayers: 2,
     //# or infinite - maximum number of players a single instance of the gamestate can handle
-    maxPlayers: 2 
+    maxPlayers: 2,
+    //TODO: allow a user to be in multiple games at once (this is a bitch to impliment)
+    multiGame: false 
   }
 });
-log(game);
+
+//log(game);
+
+
 /*
 game.modules                all instantiated module objects
-game.gamestateTemplate      the constructor used to create new gamestates, call with
+
+game.gamestateTemplate      the constructor used to create new gamestate instances, call with
                                 var g = new obj.gamestateTemplate inside of any module
+
+game.httpServer             either the server object created by the framework, or just 
+                            the same instance that was pased in    as server.server
+                            
+game.socket                 instance of socket.io that is attached to game.httpServer
 
 
 
