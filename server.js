@@ -6,13 +6,14 @@ var game = require('generalGameServer').createServer({
         Path to where all the front-end code lives (html/css/js)
         relative to the ./, without leading or trailing /
         default: 'client'
+        Unused if you are not using gGS to serve http
     */
     clientDir: 'client',
     /*
         BOOL
         If the generalGameServer should serve http requests.  You 
         can replace the generalGameServer http server with
-        Any other http server (express, apache, nginx) and point the 
+        Any other nodejs http server (express, etc) and point the 
         webroot to ./client
         default: true
     */
@@ -20,16 +21,18 @@ var game = require('generalGameServer').createServer({
     server: {} //if serveHttp is false must be an instance of http.createServer that socket.io can bind to
   },
   game: {
-    //# or infinite
+    //maximum number of instances of the gamestate (# or infinate)
     instances: 'infinite',
+    //if the user creates instances of the game
     userCreated: true,
-    //# or infinite
+    //the minimum number of players for a game to start and continue going 
+    //(0 means it will always run and persist even if everyone disconnects)
     minPlayers: 2,
-    //# or infinite
+    //# or infinite - maximum number of players a single instance of the gamestate can handle
     maxPlayers: 2 
   }
 });
-
+log(game);
 /*
 game.modules                all instantiated module objects
 game.gamestateTemplate      the constructor used to create new gamestates, call with
