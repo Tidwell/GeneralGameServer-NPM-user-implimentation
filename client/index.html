@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <title>Tic-Tac-Toe M-M-O</title>
+    <title>Evolvergy</title>
     <link rel="stylesheet" type="text/css" href="/css/reset.css" />
     <link rel="stylesheet" type="text/css" href="/css/common.css" />
     <!--Module Stylesheets-->
@@ -72,22 +72,10 @@
     <div id="gamestate" class="module">
       <h2>Gamestate Module</h2>
       <ul class="players"></ul>
-      <table>
-        <tr>
-          <td rel="x0y0"></td>
-          <td rel="x1y0"></td>
-          <td rel="x2y0"></td>
-        </tr>
-        <tr>
-          <td rel="x0y1"></td>
-          <td rel="x1y1"></td>
-          <td rel="x2y1"></td>
-        </tr>
-        <tr>
-          <td rel="x0y2"></td>
-          <td rel="x1y2"></td>
-          <td rel="x2y2"></td>
-        </tr>
+      <p class="turns">Turn <span class="current">0</span>/<span class="max">0</span></p>
+      <p class="placements">Placements: <span>0</span></p>
+      <p class="evolutions">Next Evolutions: <span>0</span></p>
+      <table class="board">
       </table>
       <p class="error" style="display: none"></p>
     </div>

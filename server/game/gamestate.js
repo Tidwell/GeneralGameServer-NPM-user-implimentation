@@ -12,19 +12,32 @@ function gamestate() {
   this.endable = true; //and the games can end 
   this.minPlayers = 2; //the minimum number of players for a game is 2
   
-  /*Set my tic-tac-toe specific variables (stuff here will be in every instance of a gamestate)*/
-  this.board = 
-  [
-  [' ',' ',' '],
-  [' ',' ',' '],
-  [' ',' ',' ']
-  ]
+  this.maxTurns = 12;
+  this.numPlacements = 1;
+  this.numGenerations = 5;
+   
+  var boardWidth = 50;
+  var boardHeight = 50;
+  
+  this.board = []
+  
+  //generate the board
+  var i = 0;
+  while (i< boardHeight) {
+    this.board[i] = [];
+    var q = 0;
+    while (q < boardWidth) {
+      this.board[i][q] = {
+        circuit: null
+      };
+      q++;
+    }
+    i++;
+  }
   
   /*Stuff specific to this gamestate*/
-  this.activePlayer = {};
   this.players = [];
-
-
+  this.turnNumber = 0;
   
   
   /*
@@ -39,43 +52,87 @@ function gamestate() {
   */
   this.startGame = function(obj) {
     this.started = true;
-    this.sendAllPlayers({type: 'gameStart', args: {players: this.players}}, obj.socket);
+    var colors = ['r', 'g', 'b']
+
     var playerNames = [];
+    var i = 0;
+
     this.players.forEach(function(player) {
+      player.color = colors[i];
+      i++;
       var name = (obj.connectedUsers[player.sessionId].name) ? obj.connectedUsers[player.sessionId].name : 'Anonymous'
       playerNames.push(name);
     });
+
+    this.sendAllPlayers({type: 'gameStart', args: {players: this.players}}, obj.socket);
     this.sendAllPlayers({type: 'playerNames', args: {players: playerNames}}, obj.socket);
+    this.sendAllPlayers({type: 'maxTurns', args: {maxTurns: this.maxTurns}}, obj.socket);
     
-    this.activePlayer = this.players[Math.floor(Math.random()*2)];
-    this.sendAllPlayers({type: 'activePlayer', args: {player: this.activePlayer}}, obj.socket);
+    this.doTurn(obj);
   }
   
-  this.placeLetter = function(obj) {
-    //find out if the command comes from the active player
-    if (obj.client.sessionId == this.activePlayer.sessionId) {
-      //get the current value on the board at the position
-      var boardPosition = this.board[obj.args.y][obj.args.x];
-      if (boardPosition == ' ') { //empty
-        if (this.players[0].sessionId == obj.client.sessionId) {
-          boardPosition = 'X';
-        }
-        else {
-          boardPosition = 'O'
-        }
-        //set the value on the board
-        this.board[obj.args.y][obj.args.x] = boardPosition;
-        //tell the players
-        this.sendAllPlayers({type: 'boardUpdate', args: {change: obj.args, value: boardPosition}}, obj.socket);
-        var gameOver = this.checkGameEnd(obj);
-        if (!gameOver) {
-          //change the active player
-          this.activePlayer = (boardPosition=='X') ? this.players[1] : this.players[0];
-          //tell the players
-          this.sendAllPlayers({type: 'activePlayer', args: {player: this.activePlayer}}, obj.socket);
-        }
+  this.doTurn = function(obj) {
+    this.players.forEach(function(player) {
+      player.placements = null;
+    });
+    this.turnNumber++;
+    this.numGenerations = 10 * (this.turnNumber*this.turnNumber)
+    //tell all players the current board state after the last evolution cycle
+    this.sendAllPlayers({type: 'boardUpdate', args: {board: this.board}}, obj.socket);
+    //request placements from players, telling them how many they need
+    this.sendAllPlayers({type: 'requestPlacement', args: {
+      placements: this.numPlacements, 
+      generations: this.numGenerations,
+      turn: this.turnNumber}}, obj.socket);
+  }
+  
+  this.makePlacements = function(obj) {
+    var allPlaced = true;
+    this.players.forEach(function(player) {
+      if (player.sessionId == obj.client.sessionId) {
+        player.placements = obj.args.placements;
       }
+      if (player.placements == null) {
+        allPlaced = false;
+      }
+    });
+    if (allPlaced) {
+      this.placeNewCircuits(obj);
     }
+  }
+  
+  this.placeNewCircuits = function(obj) {
+    var game = this;
+    this.players.forEach(function(player) {
+      player.placements.forEach(function(placement) {
+        placement.circuit.forEach(function(item) {
+          var xdelta = Number(item[0]);
+          var ydelta = Number(item[1]);
+          game.board[Number(placement.y)+ydelta][Number(placement.x)+xdelta].circuit = {
+            owner: player
+          }
+        });
+      });
+    });
+    this.energizeCircuits(obj);
+    this.sendAllPlayers({type: 'boardUpdate', args: {board: this.board}}, obj.socket);
+    console.log('evolving');
+    this.doTurn(obj);
+  }
+  
+  this.energizeCircuits = function(obj) {
+    this.board.forEach(function(row) {
+      row.forEach(function(cell) {
+        if (cell.circuit) {
+          if (!cell.energy) {
+            cell.energy = []
+          }
+          cell.energy.push({
+            owner: cell.circuit.owner
+          });
+        }
+      });
+    });
   }
   
    
@@ -95,57 +152,7 @@ function gamestate() {
       winner = 'allPlayerDisconnect';
     }
     
-    //define a null token on the board to check against
-    var nullToken = ' ';
-    //rows
-    var numRows = this.board.length;
-    var i = 0;
-    while (i< numRows) {
-      var row = this.board[i];
-      if ((row[0] == row[1] && row[0] == row[2]) && row[0] != nullToken) {
-        //game over
-        gameOver = true;
-        winner = toReturn = (row[0] == 'X') ? players[0] : players[1];
-      }
-      i++;
-    }
-    
-    //columns
-    var i = 0;
-    var numCols = this.board[0].length;
-    while (i<numCols) {
-      if (this.board[0][i] == this.board[1][i] && this.board[0][i] == this.board[2][i] && this.board[0][i] != nullToken) {
-        gameOver = true;
-        winner = (this.board[0][i] == 'X') ? players[0] : players[1];
-      }      
-      i++;
-    }
-    
-    //diagonals
-    if (this.board[0][0] == this.board[1][1] && this.board[0][0] == this.board[2][2] && this.board[0][0] != nullToken) {
-      //game over
-      gameOver = true;
-      winner =  (this.board[0][0] == 'X') ? this.players[0] : this.players[1];
-    }
-    if (this.board[2][0] == this.board[1][1] && this.board[2][0] == this.board[0][2] && this.board[2][0] != nullToken) {
-      //game over
-      gameOver = true;
-      winner =  (this.board[2][0] == 'X') ? this.players[0] : this.players[1];
-    }
-    
-    //check for the tie
-    var allFilled = true;
-    this.board.forEach(function(row) {
-      row.forEach(function(square) {
-        if (square == ' ') {
-          allFilled = false;
-        }
-      });
-    });
-    if (allFilled) {
-      gameOver = true;
-      winner = 'tie';
-    }
+    //check num turns if num == maxturns, resolve winner
     
     if (gameOver != false) {
       //otherwise someone won

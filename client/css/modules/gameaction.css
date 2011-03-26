@@ -3,15 +3,47 @@
   margin: 1px;
 }
 #gamestate table {
-  border: 0;
-  background: url(/images/gameboard.png);
+  border: 1px solid #ccc;
 }
 #gamestate tr {
-  height: 100px;
+  height: 10px;
 }
 #gamestate td {
-  width: 100px;
-  text-align: center;
-  font-size: 100px;
-  line-height: 100px;
+    border: 1px solid #3d3d3d;
+    text-align: center;
+    width: 10px;
+}
+#gamestate td.g {
+  background: green;
+}
+#gamestate td.r {
+  background: red;
+}
+#gamestate td.b {
+  background: black;
+}
+#gamestate td.placing {
+  background: blue;
+}
+#gamestate {
+  width: 560px;
+}
+
+.players .g,
+.energy .g {
+  background: green;
+}
+.players .r,
+.energy .r {
+  background: red;
+}
+
+.energy {
+  border-radius: 8px;
+  -moz-border-radius: 8px 8px 8px 8px;
+  background: none repeat scroll 0 0 pink;
+  display: block;
+  height: 8px;
+  margin: auto;
+  width: 8px;
 }

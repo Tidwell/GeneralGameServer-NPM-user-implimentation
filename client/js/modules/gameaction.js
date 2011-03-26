@@ -23,7 +23,7 @@ function gameaction() {
     $('#gamestate ul li').remove();
     //add the new player info
     args.players.forEach(function(player) {
-      $('#gamestate ul.players').append('<li rel="'+player.sessionId+'">'+player+'</li>');
+      $('#gamestate ul.players').append('<li rel="'+player.sessionId+'" class="'+player.color+'">'+player+'</li>');
     });
   }
 
@@ -54,19 +54,81 @@ function gameaction() {
       }
     });
   }
-  
-  /*
-  *Called when the active player changes
-  *@arg     args           the arguments the server sent with the message
-  *             .player    the players in the game
-  */
-  this.activePlayer = function(args) {
-    $('#gamestate ul.players li').removeClass('active');
-    $('#gamestate ul.players li[rel='+args.player.sessionId+']').addClass('active');
+   
+  this.boardUpdate = function(args) {
+    var board = $('#gamestate .board');
+    board.html('');
+    var boardHeight = args.board.length;
+    var boardWidth = args.board[0].length;
+    
+    var boardHtml = '';
+    var i = 0;
+    while (i< boardHeight) {
+      boardHtml += '<tr>';
+      var q = 0;
+      while (q < boardWidth) {
+        if (args.board[i][q]) {
+          //console.log(args.board[i][q]);
+        }
+        var token = (args.board[i][q].circuit) ? (args.board[i][q].circuit.owner.color) : '';
+        var energyTokens = '';
+        if (args.board[i][q].energy) {
+          args.board[i][q].energy.forEach(function(energy) {
+            energyTokens += '<span class="'+energy.owner.color+' energy"></span>'
+          });
+        }
+        boardHtml += '<td rel="x'+q+'y'+i+'" class="'+token+'">'+energyTokens+'</td>';
+        q++;
+      }
+      boardHtml += '</tr>';
+      i++;
+    }
+    board.html(boardHtml);
   }
   
-  this.boardUpdate = function(args) {
-    $('#gamestate td[rel=x'+args.change.x+'y'+args.change.y+']').html(args.value);
+  this.requestPlacement = function(args) {
+    $('.placements span').html(args.placements);
+    $('.evolutions span').html(args.generations);
+    $('.turns .current').html(args.turn);
+    bindPlacements(args);
+    alert('Please make '+args.placements+' placements');
+  }
+  
+  var bindPlacements = function(args) {
+    var placements = [];
+    $('.board td').unbind().click(function() {
+      var rel = $(this).attr('rel');
+      var split = rel.split('y');
+      var x = split[0].replace('x', '');
+      var y = split[1];
+      
+      
+      var circuit = [
+        [-1,-1],
+        [0,-1],    
+        [1,-1],
+        [0,1],
+        [1,0],
+      ];
+      
+      if (isValidPlacement(x,y)) {
+        placements.push({x:x,y:y,circuit: circuit});
+        $(this).addClass('placing');
+      }
+      if (placements.length == args.placements) {
+        $('.board td').unbind();
+        socket.send({type: 'makePlacements', args: {placements: placements}});
+      }
+    });
+  }
+  
+  var isValidPlacement = function(x,y) {
+    return true;
+  }
+  
+  
+  this.maxTurns = function(args) {
+    $('.turns .max').html(args.maxTurns);
   }
   
   this.gameOver = function(args) {
@@ -89,13 +151,8 @@ function gameaction() {
     alert('Your opponent has disconnected');
   }
   
-  $('#gamestate td').click(function() {
-    var loc = {
-      x: $(this).attr('rel')[1],
-      y: $(this).attr('rel')[3]
-    };
-    socket.send({type: 'placeLetter', args: {x: loc.x, y: loc.y}});
-  });
+
+  //bind dom events to send commands to server
   
 }
 // Array Remove - By John Resig (MIT Licensed)
