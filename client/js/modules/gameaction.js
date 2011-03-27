@@ -54,44 +54,100 @@ function gameaction() {
       }
     });
   }
-   
-  this.boardUpdate = function(args) {
-    var board = $('#gamestate .board');
-    board.html('');
-    var boardHeight = args.board.length;
-    var boardWidth = args.board[0].length;
+  
+  
+  var waitingChanges = [];
+  this.boardChanges = function(args) {
+    console.log('updated');
+    waitingChanges.push(args);
+    updateChanges();
     
-    var boardHtml = '';
-    var i = 0;
-    while (i< boardHeight) {
-      boardHtml += '<tr>';
-      var q = 0;
-      while (q < boardWidth) {
-        if (args.board[i][q]) {
-          //console.log(args.board[i][q]);
-        }
-        var token = (args.board[i][q].circuit) ? (args.board[i][q].circuit.owner.color) : '';
+    function updateChanges() {
+      if (waitingChanges.length > 0) {
+        setTimeout(renderBoardChanges,500);
+      }
+    }
+    
+    function renderBoardChanges() {
+      var args = waitingChanges[0];
+      if (!args) return;
+      args.changes.forEach(function(change) {
+        var token = (change.circuit) ? (change.circuit.owner.color) : '';
         var energyTokens = '';
-        if (args.board[i][q].energy) {
-          args.board[i][q].energy.forEach(function(energy) {
+        if (change.energy) {
+          change.energy.forEach(function(energy) {
             energyTokens += '<span class="'+energy.owner.color+' energy"></span>'
           });
         }
-        boardHtml += '<td rel="x'+q+'y'+i+'" class="'+token+'">'+energyTokens+'</td>';
-        q++;
-      }
-      boardHtml += '</tr>';
-      i++;
+        $('td[rel=x'+change.x+'y'+change.y+']').removeClass('r').removeClass('g').html('').addClass(token).html(energyTokens);
+      });
+      waitingChanges.remove(0);
+      updateChanges();
     }
-    board.html(boardHtml);
+  }
+   
+  
+  
+  var waitingUpdates = [];
+  this.boardUpdate = function(args) {
+    waitingUpdates.push(args);
+    updateBoard();
+    
+    function updateBoard() {
+      if (waitingUpdates.length > 0) {
+        setTimeout(renderBoardUpdate,500);
+      }
+    }
+    
+    function renderBoardUpdate() {
+      var args = waitingUpdates[0];
+      if (!args) return;
+      var board = $('#gamestate .board');
+      board.html('');
+      var boardHeight = args.board.length;
+      var boardWidth = args.board[0].length;
+      
+      var boardHtml = '';
+      var i = 0;
+      while (i< boardHeight) {
+        boardHtml += '<tr>';
+        var q = 0;
+        while (q < boardWidth) {
+          if (args.board[i][q]) {
+            //console.log(args.board[i][q]);
+          }
+          var token = (args.board[i][q].circuit) ? (args.board[i][q].circuit.owner.color) : '';
+          var energyTokens = '';
+          if (args.board[i][q].energy) {
+            args.board[i][q].energy.forEach(function(energy) {
+              energyTokens += '<span class="'+energy.owner.color+' energy"></span>'
+            });
+          }
+          boardHtml += '<td rel="x'+q+'y'+i+'" class="'+token+'">'+energyTokens+'</td>';
+          q++;
+        }
+        boardHtml += '</tr>';
+        i++;
+      }
+      board.html(boardHtml);
+      waitingUpdates.remove(0);
+      updateBoard();
+    }
   }
   
   this.requestPlacement = function(args) {
-    $('.placements span').html(args.placements);
-    $('.evolutions span').html(args.generations);
-    $('.turns .current').html(args.turn);
-    bindPlacements(args);
-    alert('Please make '+args.placements+' placements');
+    if (waitingUpdates.length > 0 || waitingChanges.length > 0) {
+      setTimeout(function() {
+        game.requestPlacement(args)
+      }, 2000);
+    }
+    else {
+      $('.placements span').html(args.placements);
+      $('.evolutions span').html(args.generations);
+      $('.turns .current').html(args.turn);
+      bindPlacements(args);
+      alert('Please make '+args.placements+' placements');
+    }
   }
   
   var bindPlacements = function(args) {

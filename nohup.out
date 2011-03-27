@@ -1,0 +1,13 @@
+[0;36m26 Mar 11:03:50[0m [0;32mlog[0m [0;37mready[0m
+27 Mar 03:03:50 - socket.io ready - accepting connections
+27 Mar 03:03:52 - Initializing client with transport "websocket"
+27 Mar 03:03:52 - Client 43517418252304196 connected
+27 Mar 03:03:53 - Initializing client with transport "websocket"
+27 Mar 03:03:53 - Client 78525331011042 connected
+[0;36m26 Mar 11:04:20[0m [0;36mLog[0m [0;37mCYCLE 0[0m
+[0;36m26 Mar 11:04:20[0m [0;36mLog[0m [0;37mneighbors[0m [0;33m0[0m [0;33m1[0m [0;33m3[0m
+[0;36m26 Mar 11:04:20[0m [0;36mLog[0m [0;37mneighbors[0m [0;33m1[0m [0;33m1[0m [0;33m5[0m
+[0;36m26 Mar 11:04:20[0m [0;36mLog[0m [0;37mneighbors[0m [0;33m1[0m [0;33m3[0m [0;33m3[0m
+[0;36m26 Mar 11:04:20[0m [0;36mLog[0m [0;37mneighbors[0m [0;33m39[0m [0;33m46[0m [0;33m3[0m
+[0;36m26 Mar 11:04:20[0m [0;36mLog[0m [0;37mneighbors[0m [0;33m40[0m [0;33m46[0m [0;33m5[0m
+[0;36m26 Mar 11:04:20[0m [0;36mLog[0m [0;37mneighbors[0m [0;33m40[0m [0;33m48[0m [0;33m3[0m

@@ -2,6 +2,7 @@
 Gamestate class that is used by the gameaction module
 This is an example of a 2-player Tic-Tac-Toe game
 */
+var log = require('logging');
 
 function gamestate() {
   
@@ -14,10 +15,10 @@ function gamestate() {
   
   this.maxTurns = 12;
   this.numPlacements = 1;
-  this.numGenerations = 5;
+  this.numGenerations = 1;
    
   var boardWidth = 50;
-  var boardHeight = 50;
+  var boardHeight = 25;
   
   this.board = []
   
@@ -76,9 +77,11 @@ function gamestate() {
       player.placements = null;
     });
     this.turnNumber++;
-    this.numGenerations = 10 * (this.turnNumber*this.turnNumber)
-    //tell all players the current board state after the last evolution cycle
-    this.sendAllPlayers({type: 'boardUpdate', args: {board: this.board}}, obj.socket);
+    this.numGenerations = 100;
+    if (this.turnNumber == 1) {
+      //tell all players the current board state after the last evolution cycle
+      this.sendAllPlayers({type: 'boardUpdate', args: {board: this.board}}, obj.socket);
+    }
     //request placements from players, telling them how many they need
     this.sendAllPlayers({type: 'requestPlacement', args: {
       placements: this.numPlacements, 
@@ -108,15 +111,31 @@ function gamestate() {
         placement.circuit.forEach(function(item) {
           var xdelta = Number(item[0]);
           var ydelta = Number(item[1]);
-          game.board[Number(placement.y)+ydelta][Number(placement.x)+xdelta].circuit = {
+          game.board[Number(placement.y)-ydelta][Number(placement.x)+xdelta].circuit = {
             owner: player
           }
         });
-      });
+      }); 
     });
+    //log(this.board);
     this.energizeCircuits(obj);
+    //log('energized');
+    //log(this.board);
+    
+    //log('clashes');
+    //log(this.board);
+    var i=0;
+    while (i<this.numGenerations) {
+      this.destroyClashingEnergy(obj);
+      var changes = this.moveEnergy(obj);
+      if (changes.length > 0) {
+        this.sendAllPlayers({type: 'boardChanges', args: {changes: changes}}, obj.socket);
+      }
+      i++;
+    }
+    //log('moving');
+    //log(this.board);
     this.sendAllPlayers({type: 'boardUpdate', args: {board: this.board}}, obj.socket);
-    console.log('evolving');
     this.doTurn(obj);
   }
   
@@ -130,6 +149,120 @@ function gamestate() {
           cell.energy.push({
             owner: cell.circuit.owner
           });
+        }
+      });
+    });
+  }
+  
+  this.moveEnergy = function(obj) {
+    var game = this;
+    //standard game of life implimentation
+    var y = 0;
+    var changes = [];
+    this.board.forEach(function(row) {
+      var x = 0;
+      row.forEach(function(cell) {
+        //==For a space that is 'populated':
+        if (cell.energy && cell.energy.length > 0) {
+          var neighbors = game.numberOfNeighbors(x,y,cell.energy[0]);
+          //Each cell with one or no neighbors dies, as if by loneliness. 
+          if (neighbors == 0 || neighbors == 1) {
+            var change = {
+              y: y,
+              x: x,
+              energy: []
+            }
+            changes.push(change);
+          }
+          //Each cell with four or more neighbors dies, as if by overpopulation. 
+          if (neighbors == 4) {
+            changes.push({
+              y: y,
+              x: x,
+              energy: []
+            });
+          }
+          //Each cell with two or three neighbors survives. 
+        }
+        //==For a space that is 'empty' or 'unpopulated'
+        else {
+          game.players.forEach(function(player) {
+            var energy = {owner: player}
+            //if (!energy) log('no energy fuck', energy);
+            var neighbors = game.numberOfNeighbors(x,y,energy);
+            //Each cell with three neighbors becomes populated.            
+            //if (neighbors > 2) log('neighbors',x,y,neighbors);
+            if (neighbors == 3) {
+              if (!game.board[y][x].energy) game.board[y][x].energy = [];
+              changes.push({
+                y: y,
+                x: x,
+                energy: game.board[y][x].energy.concat([{owner: player}]) //concat in case there is energy there
+              });
+            }
+          });
+        }
+        x++;
+      });
+      y++;
+    });
+    changes.forEach(function(change) {
+      game.board[change.y][change.x].energy = change.energy;
+    });
+    return changes;
+  }
+  
+  this.numberOfNeighbors = function(x, y, energy) {
+    var n = 0;
+    if (this.isCellEnergized(x-1, y-1, energy))	n++;
+    if (this.isCellEnergized(x-1, y, energy))	n++;
+    if (this.isCellEnergized(x-1, y+1, energy))	n++;
+    if (this.isCellEnergized(x, y-1, energy))	n++;
+    if (this.isCellEnergized(x, y+1, energy))	n++;
+    if (this.isCellEnergized(x+1, y-1, energy))	n++;
+    if (this.isCellEnergized(x+1, y, energy))	n++;
+    if (this.isCellEnergized(x+1, y+1, energy))	n++;
+    //if (n!=0) console.log(n);
+    return n;
+	}
+  
+  this.isCellEnergized = function(x,y,energy) {
+    if (!energy) {
+      return false;
+    }
+    if (x<0 || y <0 || x>boardWidth-1 || y>boardHeight-1) {
+      return false;
+    }
+    if (this.board[y][x].energy && this.board[y][x].energy[0] && this.board[y][x].energy[0].owner.color == energy.owner.color) {
+      return true;
+    }
+    return false;
+  }
+
+  
+  this.destroyClashingEnergy = function(obj) {
+    this.board.forEach(function(row) {
+      row.forEach(function(cell) {
+        var singleOwner = true;
+        var prevPlayer;
+        if (cell.energy && cell.energy.length > 0) {
+          //check if they are all owned by the same player
+          cell.energy.forEach(function(energy) {
+            if(prevPlayer) {
+              if (energy.owner != prevPlayer) {
+                singleOwner = false;
+              }
+            }
+            prevPlayer = energy.owner;
+          });
+          if (!singleOwner) {
+            cell.energy = [];
+          }
+          else if (singleOwner) {
+            //console.log('singleowner');
+            //we just want one energy, so merge all the single players multiples down
+            cell.energy = [cell.energy[0]];
+          }
         }
       });
     });
